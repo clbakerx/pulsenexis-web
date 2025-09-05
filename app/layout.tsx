@@ -1,24 +1,18 @@
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+// middleware.ts
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className="min-h-screen antialiased">
-          <header className="p-4 border-b flex gap-3 items-center">
-            <span className="font-semibold">PulseNexis</span>
-            <div className="ml-auto">
-              <SignedOut>
-                <SignInButton mode="modal" />
-              </SignedOut>
-              <SignedIn>
-                <UserButton afterSignOutUrl="/" />
-              </SignedIn>
-            </div>
-          </header>
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
-  );
-}
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/checkout(.*)',
+  '/account(.*)',
+]);
+
+export default clerkMiddleware((auth, req) => {
+  if (isProtectedRoute(req)) auth().protect();
+});
+
+export const config = {
+  matcher: [
+    '/((?!_next|favicon.ico|robots.txt|sitemap.xml|images|assets|public|api/webhooks|sign-in|sign-up|.*\\.(?:png|jpg|jpeg|svg|gif|ico|css|js|map|txt|woff|woff2|ttf)).*)',
+  ],
+};
