@@ -1,20 +1,20 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+// middleware.ts
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
+// Protect only private areas
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/checkout(.*)',
+  '/account(.*)',
 ]);
 
 export default clerkMiddleware((auth, req) => {
-  if (isPublicRoute(req)) return;
-  auth().protect();
+  if (isProtectedRoute(req)) auth().protect();
 });
 
+// Skip Next internals, static assets, webhooks, and Clerk hosted pages
 export const config = {
   matcher: [
-    "/((?!_next|.*\\..*).*)", // all non-static routes
-    "/",
-    "/api/(.*)",
+    '/((?!_next|favicon.ico|robots.txt|sitemap.xml|images|assets|public|api/webhooks|sign-in|sign-up|.*\\.(?:png|jpg|jpeg|svg|gif|ico|css|js|map|txt|woff|woff2|ttf)).*)',
   ],
 };
