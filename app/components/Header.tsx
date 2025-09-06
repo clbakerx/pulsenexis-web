@@ -3,36 +3,41 @@
 import Link from 'next/link';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 
+const pill = {
+  padding: '10px 16px',
+  borderRadius: '9999px',
+  border: '1px solid #111',
+  background: 'transparent',
+  cursor: 'pointer',
+} as const;
+
+const pillPrimary = {
+  ...pill,
+  background: '#111',
+  color: '#fff',
+  border: '1px solid #111',
+} as const;
+
 export default function Header() {
   return (
-    <header className="p-6 border-b">
-      <div className="max-w-3xl mx-auto text-center">
-        {/* Brand centered */}
-        <Link href="/" className="font-semibold text-2xl">PulseNexis</Link>
+    <header style={{ padding: '24px 0', borderBottom: '1px solid #e5e7eb' }}>
+      <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
+        {/* Brand */}
+        <Link href="/" style={{ fontWeight: 600, fontSize: 24, color: '#111', textDecoration: 'none' }}>
+          PulseNexis
+        </Link>
 
-        {/* Nav centered with bigger buttons */}
-        <nav className="mt-4 flex items-center justify-center gap-3">
+        {/* Nav buttons centered */}
+        <nav style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 12 }}>
           <SignedOut>
             <SignInButton mode="modal">
-              <button className="px-5 py-2 rounded-full border hover:shadow">
-                Sign in
-              </button>
+              <button style={pill}>Sign in</button>
             </SignInButton>
-            <Link
-              href="/sign-up"
-              className="px-5 py-2 rounded-full bg-black text-white hover:opacity-90"
-            >
-              Join
-            </Link>
+            <Link href="/sign-up" style={pillPrimary}>Join</Link>
           </SignedOut>
 
           <SignedIn>
-            <Link
-              href="/dashboard"
-              className="px-5 py-2 rounded-full border hover:shadow"
-            >
-              Dashboard
-            </Link>
+            <Link href="/dashboard" style={pill}>Dashboard</Link>
             <UserButton afterSignOutUrl="/" />
           </SignedIn>
         </nav>
