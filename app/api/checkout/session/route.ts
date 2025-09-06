@@ -1,38 +1,47 @@
 // app/api/checkout/session/route.ts
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
+import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { auth, currentUser } from '@clerk/nextjs/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeKey) {
+  console.warn('STRIPE_SECRET_KEY is not set');
+}
+const stripe = new Stripe(stripeKey || 'sk_test_placeholder', { apiVersion: '2024-06-20' });
 
-export async function POST() {
-  const { userId } = auth();
-  if (!userId) return new Response('Unauthorized', { status: 401 });
+type Plan = 'listener' | 'creator';
+type Interval = 'month' | 'year';
 
-  const user = await currentUser();
-  const email = user?.emailAddresses?.[0]?.emailAddress;
+const PRICE: Record<Plan, Record<Interval, string>> = {
+  listener: {
+    month: process.env.STRIPE_PRICE_LISTENER_MONTH || '',
+    year : process.env.STRIPE_PRICE_LISTENER_YEAR  || '',
+  },
+  creator: {
+    month: process.env.STRIPE_PRICE_CREATOR_MONTH || '',
+    year : process.env.STRIPE_PRICE_CREATOR_YEAR  || '',
+  },
+};
 
-  const priceId = process.env.STRIPE_PRICE_ID;
-  if (!priceId) return new Response('Missing STRIPE_PRICE_ID', { status: 500 });
+export async function POST(req: Request) {
+  try {
+    const { plan, interval } = await req.json();
 
-  const APP_URL = process.env.APP_URL || 'https://app.pulsenexis.com';
+    const price = PRICE?.[plan as Plan]?.[interval as Interval];
+    if (!price) {
+      return new NextResponse('Missing or invalid price ID for plan/interval', { status: 400 });
+    }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    customer_email: email,
-    line_items: [{ price: priceId, quantity: 1 }],
-    allow_promotion_codes: true,
-    success_url: `${APP_URL}/dashboard?status=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${APP_URL}/dashboard?status=cancelled`,
-    // Put Clerk user id into both Session and Subscription metadata
-    metadata: { clerkUserId: userId },
-    subscription_data: { metadata: { clerkUserId: userId } },
-  });
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [{ price, quantity: 1 }],
+      allow_promotion_codes: true,
+      success_url: `${process.env.APP_URL}/dashboard?status=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.APP_URL}/dashboard?status=cancelled`,
+    });
 
-  return new Response(JSON.stringify({ url: session.url }), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  });
+    return NextResponse.json({ url: session.url });
+  } catch (err) {
+    console.error(err);
+    return new NextResponse('Failed to create session', { status: 500 });
+  }
 }
