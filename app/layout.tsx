@@ -2,6 +2,7 @@
 import type { Metadata } from 'next';
 import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
+import Header from './components/Header';
 
 export const metadata: Metadata = {
   title: 'PulseNexis',
@@ -11,14 +12,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider
-      // using hosted auth on accounts.pulsenexis.com
-      signInUrl="https://accounts.pulsenexis.com/sign-in"
-      signUpUrl="https://accounts.pulsenexis.com/sign-up"
-      afterSignOutUrl="https://pulsenexis.com"
-    >
+    <ClerkProvider>
       <html lang="en">
-        <body>{children}</body>
+        <body>
+          <Header />
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );
