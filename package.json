@@ -27,4 +27,4 @@
   "autoprefixer": "^10.4.19"
 },
 "overrides": { "eslint": "8.57.0" 
-},
+]
