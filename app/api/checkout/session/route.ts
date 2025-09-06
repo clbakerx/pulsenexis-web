@@ -1,4 +1,7 @@
 // app/api/checkout/session/route.ts
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 import Stripe from 'stripe';
 import { auth, currentUser } from '@clerk/nextjs/server';
 
@@ -9,7 +12,7 @@ export async function POST() {
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
   const user = await currentUser();
-  const email = user?.emailAddresses?.[0]?.emailAddress;
+  const email = user?.emailAddresses?.[0]?.emailAddress ?? undefined;
 
   const priceId = process.env.STRIPE_PRICE_ID!;
   const APP_URL = 'https://app.pulsenexis.com';
