@@ -12,16 +12,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider
-      // send users to Clerk’s hosted pages on your accounts subdomain
+      // using hosted auth on accounts.pulsenexis.com
       signInUrl="https://accounts.pulsenexis.com/sign-in"
       signUpUrl="https://accounts.pulsenexis.com/sign-up"
-      // where to go after sign out (your marketing site or app home)
       afterSignOutUrl="https://pulsenexis.com"
     >
       <html lang="en">
-        <body>
-          {/* Optional: <Header /> (client component shown below) */}
-          {children}
-        </body>
+        <body>{children}</body>
       </html>
-    </ClerkP
+    </ClerkProvider>
+  );
+}
