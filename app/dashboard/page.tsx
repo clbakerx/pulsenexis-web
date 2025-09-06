@@ -1,15 +1,13 @@
 // app/dashboard/page.tsx
-import { auth, currentUser } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { SignedIn, SignedOut, RedirectToSignIn, useUser } from '@clerk/nextjs';
 
 type AccountType = 'listener' | 'creator';
 type Plan = 'free' | 'subscriber' | 'pro' | 'premium';
 
-export default async function DashboardPage() {
-  const { userId } = auth();
-  if (!userId) redirect('/sign-in');
-
-  const user = await currentUser();
+function DashboardClient() {
+  const { user } = useUser();
   const meta = (user?.publicMetadata ?? {}) as Record<string, unknown>;
 
   const accountType = (meta.accountType as AccountType) || 'listener';
@@ -21,10 +19,10 @@ export default async function DashboardPage() {
     user?.username ||
     'Friend';
 
-  // simple inline styles
   const wrap: React.CSSProperties = { maxWidth: 960, margin: '24px auto' };
   const card: React.CSSProperties = { border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 };
   const pill: React.CSSProperties = { display: 'inline-block', padding: '4px 10px', borderRadius: 999, border: '1px solid #111', fontSize: 12 };
+  const btn: React.CSSProperties = { padding: '10px 16px', borderRadius: 8, background: '#111', color: '#fff', textDecoration: 'none', display: 'inline-block' };
 
   return (
     <main style={wrap}>
@@ -43,13 +41,27 @@ export default async function DashboardPage() {
         )}
 
         {plan === 'free' ? (
-          <p style={{ color: '#555', marginTop: 12 }}>
-            You’re on the <strong>Free</strong> plan. Upgrade to unlock HQ downloads and more.
-          </p>
+          <div style={{ marginTop: 12 }}>
+            <p style={{ color: '#555' }}>You’re on the <strong>Free</strong> plan. Upgrade to unlock HQ downloads and more.</p>
+            <a href="/checkout" style={btn}>Upgrade</a>
+          </div>
         ) : (
           <p style={{ color: '#16a34a', marginTop: 12 }}>✅ Active subscription — thanks for supporting PulseNexis!</p>
         )}
       </section>
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+      <SignedIn>
+        <DashboardClient />
+      </SignedIn>
+    </>
   );
 }
