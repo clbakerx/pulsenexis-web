@@ -30,15 +30,11 @@ export async function POST(req: Request) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // We stored the Clerk user id in metadata when creating the session/subscription
         let clerkUserId = (session.metadata?.clerkUserId as string | undefined) ?? undefined;
-
-        // If not present, fetch the subscription to read metadata there
         if (!clerkUserId && typeof session.subscription === 'string') {
           const sub = await stripe.subscriptions.retrieve(session.subscription);
           clerkUserId = sub.metadata?.clerkUserId as string | undefined;
         }
-
         if (clerkUserId) {
           await clerkClient.users.updateUser(clerkUserId, {
             publicMetadata: { plan: 'subscriber' },
@@ -53,9 +49,7 @@ export async function POST(req: Request) {
         const uid = sub.metadata?.clerkUserId as string | undefined;
         if (uid) {
           const plan = (sub.status === 'active' || sub.status === 'trialing') ? 'subscriber' : 'free';
-          await clerkClient.users.updateUser(uid, {
-            publicMetadata: { plan },
-          });
+          await clerkClient.users.updateUser(uid, { publicMetadata: { plan } });
         }
         break;
       }
@@ -64,15 +58,12 @@ export async function POST(req: Request) {
         const sub = event.data.object as Stripe.Subscription;
         const uid = sub.metadata?.clerkUserId as string | undefined;
         if (uid) {
-          await clerkClient.users.updateUser(uid, {
-            publicMetadata: { plan: 'free' },
-          });
+          await clerkClient.users.updateUser(uid, { publicMetadata: { plan: 'free' } });
         }
         break;
       }
-
       default:
-        // ignore other events
+        // ignore others
         break;
     }
   } catch (err: any) {
