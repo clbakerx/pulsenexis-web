@@ -4,10 +4,18 @@
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
 import { useState } from 'react';
 
+type Plan = 'listener' | 'creator';
+type Interval = 'month' | 'year';
+
 export default function CheckoutPage() {
-  const [plan, setPlan] = useState<'listener' | 'creator'>('listener');
-  const [interval, setInterval] = useState<'month' | 'year'>('month');
+  const [plan, setPlan] = useState<Plan>('listener');
+  const [interval, setInterval] = useState<Interval>('month');
   const [loading, setLoading] = useState(false);
+
+  const prices = {
+    listener: { month: '$9.99', year: '$119.00' },
+    creator:  { month: '$19.00', year: '$225.00' },
+  };
 
   async function startCheckout() {
     try {
@@ -17,18 +25,14 @@ export default function CheckoutPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ plan, interval }),
       });
-
-      if (!res.ok) {
-        setLoading(false);
-        alert('Failed to start checkout');
-        return;
-      }
-
+      if (!res.ok) throw new Error(await res.text());
       const { url } = await res.json();
       window.location.href = url;
     } catch (e) {
+      console.error(e);
+      alert('Failed to start checkout');
+    } finally {
       setLoading(false);
-      alert('Something went wrong starting checkout');
     }
   }
 
@@ -39,76 +43,38 @@ export default function CheckoutPage() {
       </SignedOut>
 
       <SignedIn>
-        <main style={{ maxWidth: 640, margin: '40px auto', textAlign: 'center' }}>
+        <main style={{ padding: 24, maxWidth: 720, margin: '0 auto' }}>
           <h1>Choose your plan</h1>
 
-          {/* Plan */}
-          <div style={{ marginTop: 24 }}>
-            <strong>Role:</strong>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 8 }}>
-              <label>
-                <input
-                  type="radio"
-                  name="plan"
-                  value="listener"
-                  checked={plan === 'listener'}
-                  onChange={() => setPlan('listener')}
-                />{' '}
-                Listener ($9.99/mo • $119/yr)
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="plan"
-                  value="creator"
-                  checked={plan === 'creator'}
-                  onChange={() => setPlan('creator')}
-                />{' '}
-                Creator ($19/mo • $225/yr)
-              </label>
+          <section style={{ marginTop: 16 }}>
+            <strong>Role</strong>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button aria-pressed={plan === 'listener'} onClick={() => setPlan('listener')}>
+                Listener
+              </button>
+              <button aria-pressed={plan === 'creator'} onClick={() => setPlan('creator')}>
+                Creator
+              </button>
             </div>
-          </div>
+          </section>
 
-          {/* Interval */}
-          <div style={{ marginTop: 24 }}>
-            <strong>Billing interval:</strong>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 8 }}>
-              <label>
-                <input
-                  type="radio"
-                  name="interval"
-                  value="month"
-                  checked={interval === 'month'}
-                  onChange={() => setInterval('month')}
-                />{' '}
-                Monthly
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="interval"
-                  value="year"
-                  checked={interval === 'year'}
-                  onChange={() => setInterval('year')}
-                />{' '}
-                Yearly
-              </label>
+          <section style={{ marginTop: 16 }}>
+            <strong>Billing</strong>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button aria-pressed={interval === 'month'} onClick={() => setInterval('month')}>
+                Monthly ({prices[plan].month})
+              </button>
+              <button aria-pressed={interval === 'year'} onClick={() => setInterval('year')}>
+                Yearly ({prices[plan].year})
+              </button>
             </div>
-          </div>
+          </section>
 
-          <button
-            onClick={startCheckout}
-            disabled={loading}
-            style={{
-              marginTop: 28,
-              padding: '10px 18px',
-              borderRadius: 8,
-              border: '1px solid #111',
-              cursor: loading ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {loading ? 'Starting…' : 'Subscribe'}
-          </button>
+          <div style={{ marginTop: 24 }}>
+            <button onClick={startCheckout} disabled={loading}>
+              {loading ? 'Starting…' : 'Upgrade'}
+            </button>
+          </div>
         </main>
       </SignedIn>
     </>
