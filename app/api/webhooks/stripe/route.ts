@@ -9,18 +9,15 @@ import { clerkClient } from '@clerk/nextjs/server';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
 
 export async function POST(req: Request) {
-  const signature = headers().get('stripe-signature');
-  if (!signature) return new Response('Missing Stripe signature', { status: 400 });
+  const whSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!whSecret) return new Response('Missing STRIPE_WEBHOOK_SECRET', { status: 500 });
 
-  const rawBody = await req.text();
+  const sig = headers().get('stripe-signature');
+  const body = await req.text();
 
   let event: Stripe.Event;
   try {
-    event = await stripe.webhooks.constructEventAsync(
-      rawBody,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(body, sig!, whSecret);
   } catch (err: any) {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
@@ -29,46 +26,46 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        const clerkUserId =
+          (session.metadata?.clerkUserId as string | undefined) ??
+          (session.subscription ? undefined : undefined);
 
-        let clerkUserId = (session.metadata?.clerkUserId as string | undefined) ?? undefined;
-        if (!clerkUserId && typeof session.subscription === 'string') {
-          const sub = await stripe.subscriptions.retrieve(session.subscription);
-          clerkUserId = sub.metadata?.clerkUserId as string | undefined;
-        }
-        if (clerkUserId) {
+        // Prefer metadata from the created Subscription (if available)
+        if (!clerkUserId && session.subscription) {
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          const fromSub = sub.metadata?.clerkUserId as string | undefined;
+          if (fromSub) {
+            await clerkClient.users.updateUser(fromSub, {
+              publicMetadata: { accountType: 'creator', plan: 'subscriber' },
+            });
+          }
+        } else if (clerkUserId) {
           await clerkClient.users.updateUser(clerkUserId, {
-            publicMetadata: { plan: 'subscriber' },
+            publicMetadata: { accountType: 'creator', plan: 'subscriber' },
           });
-        }
-        break;
-      }
-
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const sub = event.data.object as Stripe.Subscription;
-        const uid = sub.metadata?.clerkUserId as string | undefined;
-        if (uid) {
-          const plan = (sub.status === 'active' || sub.status === 'trialing') ? 'subscriber' : 'free';
-          await clerkClient.users.updateUser(uid, { publicMetadata: { plan } });
         }
         break;
       }
 
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
-        const uid = sub.metadata?.clerkUserId as string | undefined;
-        if (uid) {
-          await clerkClient.users.updateUser(uid, { publicMetadata: { plan: 'free' } });
+        const clerkUserId = sub.metadata?.clerkUserId as string | undefined;
+        if (clerkUserId) {
+          await clerkClient.users.updateUser(clerkUserId, {
+            publicMetadata: { accountType: 'listener', plan: 'free' },
+          });
         }
         break;
       }
-      default:
-        // ignore others
-        break;
-    }
-  } catch (err: any) {
-    return new Response(`Handler error: ${err.message}`, { status: 500 });
-  }
 
-  return new Response('ok', { status: 200 });
+      case 'customer.subscription.updated': {
+        // Optional: map active/canceled/paused to plans if you want
+        break;
+      }
+    }
+
+    return new Response('ok', { status: 200 });
+  } catch (err) {
+    return new Response('Handler error', { status: 500 });
+  }
 }
