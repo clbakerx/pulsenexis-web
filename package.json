@@ -26,4 +26,5 @@
   "postcss": "^8.4.39",
   "autoprefixer": "^10.4.19"
 },
-"overrides": { "eslint": "8.57.0" }
+"overrides": { "eslint": "8.57.0" 
+},
