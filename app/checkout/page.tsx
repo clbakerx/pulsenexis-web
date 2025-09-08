@@ -16,7 +16,7 @@ import {
   PaymentElement,
   usePaymentElement,
   SubscriptionDetailsButton,
-} from '@clerk/nextjs/experimental';
+} 
 
 // ✅ TODO: Put your real Clerk Plan ID here (e.g. "cplan_abc123")
 const PLAN_ID = 'cplan_XXXXXXXX';
