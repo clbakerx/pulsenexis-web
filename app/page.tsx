@@ -1,9 +1,5 @@
-export const metadata = {
-  title: "PulseNexis — Home",
-  description: "Enjoy Honey Drip Records music on PulseNexis.",
-};
-
-export default function Home() {
+// app/page.tsx (or app/checkout/page.tsx)
+export default function Page() {
   return (
     <main className="container mx-auto px-6 py-16">
       <h1 className="text-3xl font-bold tracking-tight">Welcome to PulseNexis 🚀</h1>
