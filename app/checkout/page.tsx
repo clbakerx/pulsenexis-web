@@ -19,7 +19,7 @@ import {
 } 
 
 // ✅ TODO: Put your real Clerk Plan ID here (e.g. "cplan_abc123")
-const PLAN_ID = 'user_32Q89s3W8eGj7C2MU01HwoNtrkn';
+const PLAN_ID = 'cplan_32Q89s3W8eGj7C2MU01HwoNtrkn';
 // "month" or "year"
 const DEFAULT_PERIOD: 'month' | 'year' = 'month';
 
