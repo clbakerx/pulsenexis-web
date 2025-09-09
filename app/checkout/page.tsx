@@ -9,7 +9,8 @@ import {
   PaymentElementProvider,
   PaymentElement,
   usePaymentElement,
-} from "@clerk/nextjs";
+} from "@clerk/nextjs/experimental";
+
 
 
 const FALLBACK_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_PLAN_ID;
