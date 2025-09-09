@@ -25,7 +25,7 @@ export default function CheckoutPage() {
 
       {!planId && (
         <p className="mt-3 text-sm text-red-600">
-          Missing a planId. Pass <code>?planId=cplan_xxx</code> (and optional <code>&period=month|year</code>) in the URL,
+          Missing a planId. Pass <code>?cplan_32AhHAILFmheYRrjgEdEhvmlgAq</code> (and optional <code>&period=month|year</code>) in the URL,
           or set <code>NEXT_PUBLIC_CLERK_PLAN_ID</code>.
         </p>
       )}
