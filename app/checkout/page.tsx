@@ -9,7 +9,8 @@ import {
   PaymentElementProvider,
   PaymentElement,
   usePaymentElement,
-} from "@clerk/nextjs/experimental";
+} from "@clerk/nextjs";
+
 
 const FALLBACK_PLAN_ID = process.env.NEXT_PUBLIC_CLERK_PLAN_ID;
 type Period = "month" | "year";
