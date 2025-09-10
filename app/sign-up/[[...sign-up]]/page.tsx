@@ -1,14 +1,13 @@
-import { SignUp } from "@clerk/nextjs";
+'use client';
+import { SignUp } from '@clerk/nextjs';
 
-export default function Page() {
+export default function SignUpPage() {
   return (
-    <main className="p-10">
-      <SignUp
-        routing="path"
-        path="/sign-up"
-        afterSignUpUrl="/dashboard"
-        signInUrl="/sign-in"
-      />
-    </main>
+    <SignUp
+      routing="path"
+      path="/sign-up"
+      fallbackRedirectUrl="/dashboard"
+      forceRedirectUrl="/dashboard"
+    />
   );
 }
