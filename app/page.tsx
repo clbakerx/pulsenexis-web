@@ -19,7 +19,7 @@ export default function Page() {
           href="/Manage Account"
           className="rounded-xl border px-4 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
         >
-          Go to Checkout
+          Go to Account
         </Link>
       </div>
     </main>
