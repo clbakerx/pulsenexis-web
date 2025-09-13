@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Page() {
   return (
     <main className="container mx-auto px-6 py-16">
-      <h1 className="text-3xl font-bold tracking-tight">PulseNexis — v4</h1>
+     <h1 className="text-3xl font-bold tracking-tight">PulseNexis — v6</h1>
 
       <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
         This text comes from <code>app/page.tsx</code>. If you can read this on the site, your live deploy worked.
