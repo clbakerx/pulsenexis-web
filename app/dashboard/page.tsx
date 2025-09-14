@@ -34,7 +34,7 @@ export default async function DashboardPage() {
       {/* …your UI… */}
       {/* Show Upgrade when NOT premium */}
       {plan !== "premium" && (
-        <Link href="/account" className="rounded px-4 py-2 border">
+        <Link href="app/checkout/account" className="rounded px-4 py-2 border">
         Manage account
         </Link>
       )}
