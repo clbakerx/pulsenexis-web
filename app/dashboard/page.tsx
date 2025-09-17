@@ -10,33 +10,20 @@ const isPlan = (v: unknown): v is Plan =>
 
 export default async function DashboardPage() {
   const { userId } = await auth();
-  if (!userId) {
-    const url = `/sign-in?redirect_url=${encodeURIComponent("/dashboard")}`;
-    redirect(url);
-  }
+  if (!userId) redirect(`/sign-in?redirect_url=${encodeURIComponent("/dashboard")}`);
 
-  const user = await currentUser(); // can be null in edge cases
+  const user = await currentUser();
   const meta = (user?.publicMetadata ?? {}) as Record<string, unknown>;
-
   const plan: Plan = isPlan(meta.plan) ? meta.plan : "free";
 
-  const btn: CSSProperties = {
-    padding: "10px 16px",
-    borderRadius: 8,
-    background: "#111",
-    color: "#fff",
-    textDecoration: "none",
-    display: "inline-block",
-  };
+  const btn: CSSProperties = { padding: "10px 16px", borderRadius: 8, background: "#111", color: "#fff", textDecoration: "none", display: "inline-block" };
 
   return (
     <main style={{ maxWidth: 960, margin: "24px auto" }}>
-      {/* …your UI… */}
-      {/* Show Upgrade when NOT premium */}
+      <h1>Dashboard</h1>
+      <p>Your plan: <b>{plan}</b></p>
       {plan !== "premium" && (
-        <Link href="app/checkout/account" className="rounded px-4 py-2 border">
-        Manage account
-        </Link>
+        <Link href="/plans" style={btn}>Upgrade</Link>
       )}
     </main>
   );
