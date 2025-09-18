@@ -1,5 +1,9 @@
-// middleware.ts  (TEMPORARY)
-import { NextResponse } from 'next/server';
-export default function middleware() { return NextResponse.next(); }
-export const config = { matcher: ['/((?!_next|.*\\..*).*)'] };
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
+const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/account(.*)"]);
+
+export default clerkMiddleware((auth, req) => {
+  if (isProtectedRoute(req)) auth().protect();
+});
+
+export const config = { matcher: ["/((?!_next|.*\\..*|favicon.ico).*)"] };
