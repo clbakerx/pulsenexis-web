@@ -6,7 +6,7 @@ export default function Page() {
      <h1 className="text-3xl font-bold tracking-tight">PulseNexis — v6</h1>
 
       <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-        This text comes from <code>app/page.tsx</code>. If you can read this on the site, your live deploy worked.
+        Welcome to PulseNexis! Join us today and experience the future of productivity.
       </p>
 
       <div className="mt-8 flex flex-wrap gap-3">
