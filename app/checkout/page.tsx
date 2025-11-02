@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { useSearchParams } from 'next/navigation';
 import { ClerkLoaded, SignedIn } from '@clerk/nextjs';
 import {
   CheckoutProvider,
@@ -21,31 +20,41 @@ const MONTHLY_PLAN_ID =
 const ANNUAL_PLAN_ID =
   process.env.NEXT_PUBLIC_CLERK_ANNUAL_PLAN_ID ?? 'cplan_annual_placeholder';
 
-function CheckoutContent() {
-  const search = useSearchParams();
-  const q = (search.get('period') as Period) || 'month';
-  const period: Period = q === 'annual' ? 'annual' : 'month';
+function CheckoutPageContent({ searchParams }: { searchParams: { period?: string } }) {
+  const period: Period = searchParams.period === 'annual' ? 'annual' : 'month';
   const planId = period === 'annual' ? ANNUAL_PLAN_ID : MONTHLY_PLAN_ID;
 
   return (
-    <CheckoutProvider for="user" planId={planId} planPeriod={period}>
-      <ClerkLoaded>
-        <SignedIn>
-          <CustomCheckout period={period} />
-        </SignedIn>
-      </ClerkLoaded>
-    </CheckoutProvider>
+    <>
+      <Header />
+      <CheckoutProvider for="user" planId={planId} planPeriod={period}>
+        <ClerkLoaded>
+          <SignedIn>
+            <CustomCheckout period={period} />
+          </SignedIn>
+        </ClerkLoaded>
+      </CheckoutProvider>
+    </>
   );
 }
 
-export default function CheckoutPage() {
+export default function CheckoutPage({
+  searchParams,
+}: {
+  searchParams: { period?: string };
+}) {
   return (
-    <>
-      <Header />
-      <Suspense fallback={<div className="container mx-auto px-6 py-16"><div className="max-w-2xl mx-auto text-center">Loading checkout...</div></div>}>
-        <CheckoutContent />
-      </Suspense>
-    </>
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-6 py-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="animate-pulse">Loading checkout...</div>
+          </div>
+        </div>
+      }
+    >
+      <CheckoutPageContent searchParams={searchParams} />
+    </Suspense>
   );
 }
 
