@@ -16,9 +16,9 @@ type Period = 'month' | 'annual';
 
 // (Recommended) put these in .env.local as NEXT_PUBLIC_CLERK_MONTHLY_PLAN_ID / NEXT_PUBLIC_CLERK_ANNUAL_PLAN_ID
 const MONTHLY_PLAN_ID =
-  process.env.NEXT_PUBLIC_CLERK_MONTHLY_PLAN_ID ?? 'cplan_month_placeholder';
+  process.env.NEXT_PUBLIC_CLERK_MONTHLY_PLAN_ID ?? 'cplan_32AaH4qc5pOxgmOi9lnpM0QzS3s';
 const ANNUAL_PLAN_ID =
-  process.env.NEXT_PUBLIC_CLERK_ANNUAL_PLAN_ID ?? 'cplan_annual_placeholder';
+  process.env.NEXT_PUBLIC_CLERK_ANNUAL_PLAN_ID ?? 'cplan_34vt95CKqQOFH8YSdYpVT2ceq6W';
 
 export default function CheckoutPage() {
   const search = useSearchParams();
