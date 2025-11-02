@@ -10,6 +10,7 @@ import {
   PaymentElement,
   usePaymentElement,
 } from '@clerk/nextjs/experimental';
+import { Suspense } from 'react';
 import Header from '../components/Header';
 
 type Period = 'month' | 'annual';
@@ -20,22 +21,30 @@ const MONTHLY_PLAN_ID =
 const ANNUAL_PLAN_ID =
   process.env.NEXT_PUBLIC_CLERK_ANNUAL_PLAN_ID ?? 'cplan_annual_placeholder';
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const search = useSearchParams();
   const q = (search.get('period') as Period) || 'month';
   const period: Period = q === 'annual' ? 'annual' : 'month';
   const planId = period === 'annual' ? ANNUAL_PLAN_ID : MONTHLY_PLAN_ID;
 
   return (
+    <CheckoutProvider for="user" planId={planId} planPeriod={period}>
+      <ClerkLoaded>
+        <SignedIn>
+          <CustomCheckout period={period} />
+        </SignedIn>
+      </ClerkLoaded>
+    </CheckoutProvider>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
     <>
       <Header />
-      <CheckoutProvider for="user" planId={planId} planPeriod={period}>
-        <ClerkLoaded>
-          <SignedIn>
-            <CustomCheckout period={period} />
-          </SignedIn>
-        </ClerkLoaded>
-      </CheckoutProvider>
+      <Suspense fallback={<div className="container mx-auto px-6 py-16"><div className="max-w-2xl mx-auto text-center">Loading checkout...</div></div>}>
+        <CheckoutContent />
+      </Suspense>
     </>
   );
 }
