@@ -44,7 +44,7 @@ export default function CheckoutPage({
 }
 
 function CustomCheckout({ period }: { period: Period }) {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -54,7 +54,7 @@ function CustomCheckout({ period }: { period: Period }) {
   const savings = period === 'annual' ? 'Save $20 per year' : '';
 
   const handleCheckout = async () => {
-    if (!user) {
+    if (!isLoaded || !user) {
       setError('Please sign in to continue');
       return;
     }
@@ -69,7 +69,7 @@ function CustomCheckout({ period }: { period: Period }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          plan: 'subscriber', // We'll update this to match the new API structure
+          plan: 'subscriber',
           interval: period === 'annual' ? 'year' : 'month',
           userId: user.id,
         }),
