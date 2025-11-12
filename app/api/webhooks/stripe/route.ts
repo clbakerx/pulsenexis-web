@@ -23,32 +23,107 @@ export async function POST(req: NextRequest) {
     return new Response(`Invalid signature: ${err.message}`, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.metadata?.userId;
+  switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.metadata?.userId;
 
-    // default label; prefer price metadata if you set it
-    let planLabel = "subscriber";
+      if (!userId) {
+        console.warn("No userId found in session metadata");
+        break;
+      }
 
-    if (session.subscription) {
-      const sub = await stripe.subscriptions.retrieve(session.subscription as string, {
-        expand: ["items.data.price"],
-      });
-      const price = sub.items.data[0]?.price;
+      // Get plan information from session metadata
+      let planLabel = session.metadata?.plan || "subscriber";
+      let planInterval = session.metadata?.interval || "month";
+      
+      // Also try to get info from subscription if available
+      if (session.subscription) {
+        const sub = await stripe.subscriptions.retrieve(session.subscription as string, {
+          expand: ["items.data.price"],
+        });
+        const price = sub.items.data[0]?.price;
 
-      // If you added metadata on prices in Stripe, use it:
-      planLabel = (price?.metadata?.plan as string) || planLabel;
+        // Override with price metadata if available
+        planLabel = (price?.metadata?.plan as string) || planLabel;
+        planInterval = (price?.recurring?.interval as string) || planInterval;
+      }
+
+      try {
+        await clerkClient.users.updateUser(userId, {
+          publicMetadata: {
+            plan: planLabel,
+            planInterval: planInterval,
+            stripeCustomerId: session.customer as string,
+            stripeSubscriptionId: session.subscription as string,
+            subscriptionStatus: 'active',
+            lastPaymentAt: new Date().toISOString(),
+          },
+        });
+        
+        console.log(`Updated user ${userId} with plan: ${planLabel} (${planInterval})`);
+      } catch (error) {
+        console.error(`Failed to update user ${userId}:`, error);
+      }
+      break;
     }
 
-    if (userId) {
-      await clerkClient.users.updateUser(userId, {
-        publicMetadata: {
-          plan: planLabel,
-          stripeCustomerId: session.customer as string | undefined,
-          stripeSubscriptionId: session.subscription as string | undefined,
-        },
+    case "customer.subscription.updated": {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = subscription.customer as string;
+
+      // Find user by Stripe customer ID
+      const users = await clerkClient.users.getUserList({
+        limit: 100,
       });
+
+      const user = users.data.find(u => 
+        u.publicMetadata?.stripeCustomerId === customerId
+      );
+
+      if (user) {
+        await clerkClient.users.updateUser(user.id, {
+          publicMetadata: {
+            ...user.publicMetadata,
+            subscriptionStatus: subscription.status,
+            lastUpdatedAt: new Date().toISOString(),
+          },
+        });
+        
+        console.log(`Updated subscription status for user ${user.id}: ${subscription.status}`);
+      }
+      break;
     }
+
+    case "customer.subscription.deleted": {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = subscription.customer as string;
+
+      // Find user by Stripe customer ID
+      const users = await clerkClient.users.getUserList({
+        limit: 100,
+      });
+
+      const user = users.data.find(u => 
+        u.publicMetadata?.stripeCustomerId === customerId
+      );
+
+      if (user) {
+        await clerkClient.users.updateUser(user.id, {
+          publicMetadata: {
+            ...user.publicMetadata,
+            subscriptionStatus: 'cancelled',
+            cancelledAt: new Date().toISOString(),
+          },
+        });
+        
+        console.log(`Cancelled subscription for user ${user.id}`);
+      }
+      break;
+    }
+
+    default:
+      console.log(`Unhandled event type: ${event.type}`);
   }
 
   return new Response("ok");

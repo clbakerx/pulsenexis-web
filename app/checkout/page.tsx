@@ -1,39 +1,24 @@
 'use client';
 
 import * as React from 'react';
-import { ClerkLoaded, SignedIn } from '@clerk/nextjs';
-import {
-  CheckoutProvider,
-  useCheckout,
-  PaymentElementProvider,
-  PaymentElement,
-  usePaymentElement,
-} from '@clerk/nextjs/experimental';
+import { ClerkLoaded, SignedIn, useUser } from '@clerk/nextjs';
 import { Suspense } from 'react';
 import Header from '../components/Header';
 
 type Period = 'month' | 'annual';
 
-// (Recommended) put these in .env.local as NEXT_PUBLIC_CLERK_MONTHLY_PLAN_ID / NEXT_PUBLIC_CLERK_ANNUAL_PLAN_ID
-const MONTHLY_PLAN_ID =
-  process.env.NEXT_PUBLIC_CLERK_MONTHLY_PLAN_ID ?? 'cplan_month_placeholder';
-const ANNUAL_PLAN_ID =
-  process.env.NEXT_PUBLIC_CLERK_ANNUAL_PLAN_ID ?? 'cplan_annual_placeholder';
-
-function CheckoutPageContent({ searchParams }: { searchParams: { period?: string } }) {
-  const period: Period = searchParams.period === 'annual' ? 'annual' : 'month';
-  const planId = period === 'annual' ? ANNUAL_PLAN_ID : MONTHLY_PLAN_ID;
+function CheckoutPageContent({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
+  const resolvedSearchParams = React.use(searchParams);
+  const period: Period = resolvedSearchParams.period === 'annual' ? 'annual' : 'month';
 
   return (
     <>
       <Header />
-      <CheckoutProvider for="user" planId={planId} planPeriod={period}>
-        <ClerkLoaded>
-          <SignedIn>
-            <CustomCheckout period={period} />
-          </SignedIn>
-        </ClerkLoaded>
-      </CheckoutProvider>
+      <ClerkLoaded>
+        <SignedIn>
+          <CustomCheckout period={period} />
+        </SignedIn>
+      </ClerkLoaded>
     </>
   );
 }
@@ -41,7 +26,7 @@ function CheckoutPageContent({ searchParams }: { searchParams: { period?: string
 export default function CheckoutPage({
   searchParams,
 }: {
-  searchParams: { period?: string };
+  searchParams: Promise<{ period?: string }>;
 }) {
   return (
     <Suspense
@@ -59,20 +44,55 @@ export default function CheckoutPage({
 }
 
 function CustomCheckout({ period }: { period: Period }) {
-  const { checkout } = useCheckout();
-  const { status, start } = checkout;
-
-  // Initialize the checkout session once
-  React.useEffect(() => {
-    if (status === 'needs_initialization') {
-      start();
-    }
-  }, [status, start]);
+  const { user } = useUser();
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const planDisplayName = period === 'annual' ? 'Annual Plan' : 'Monthly Plan';
   const planPrice = period === 'annual' ? '$99' : '$9.99';
   const planBilling = period === 'annual' ? 'per year' : 'per month';
   const savings = period === 'annual' ? 'Save $20 per year' : '';
+
+  const handleCheckout = async () => {
+    if (!user) {
+      setError('Please sign in to continue');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/checkout/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan: 'subscriber', // We'll update this to match the new API structure
+          interval: period === 'annual' ? 'year' : 'month',
+          userId: user.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+
+      const { url } = await response.json();
+      
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <main className="container mx-auto px-6 py-16">
@@ -85,7 +105,7 @@ function CustomCheckout({ period }: { period: Period }) {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-1 gap-8 max-w-lg mx-auto">
           {/* Order Summary */}
           <div className="bg-neutral-50 dark:bg-neutral-900 rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
@@ -139,22 +159,37 @@ function CustomCheckout({ period }: { period: Period }) {
                 </li>
               </ul>
             </div>
-          </div>
 
-          {/* Payment Form */}
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold">Payment Details</h2>
-            
-            <PaymentElementProvider checkout={checkout}>
-              <div className="space-y-4">
-                <PaymentElement />
-                <PayButton />
+            {/* Checkout Button */}
+            <div className="mt-8 space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
+                  {error}
+                </div>
+              )}
+              
+              <button
+                onClick={handleCheckout}
+                disabled={isLoading}
+                className="w-full rounded-xl bg-black text-white px-4 py-3 text-sm font-medium shadow-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  'Complete Purchase'
+                )}
+              </button>
+
+              {/* Security notice */}
+              <div className="text-xs text-neutral-500 dark:text-neutral-400 text-center">
+                <p>🔒 Your payment information is secure and encrypted</p>
               </div>
-            </PaymentElementProvider>
-
-            {/* Security notice */}
-            <div className="text-xs text-neutral-500 dark:text-neutral-400 text-center">
-              <p>🔒 Your payment information is secure and encrypted</p>
             </div>
           </div>
         </div>
@@ -163,44 +198,4 @@ function CustomCheckout({ period }: { period: Period }) {
   );
 }
 
-function PayButton() {
-  const { checkout } = useCheckout();
-  const { isFormReady, submit } = usePaymentElement();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  async function onPay() {
-    if (!isFormReady || isSubmitting) return;
-    
-    setIsSubmitting(true);
-    try {
-      await submit(); // collect card details
-      await checkout.confirm({}); // confirm the checkout
-      // Redirect will be handled by Clerk's success URL configuration
-      window.location.href = '/thank-you';
-    } catch (error) {
-      console.error('Payment failed:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  return (
-    <button
-      onClick={onPay}
-      disabled={!isFormReady || isSubmitting}
-      className="w-full rounded-xl bg-black text-white px-4 py-3 text-sm font-medium shadow-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-    >
-      {isSubmitting ? (
-        <span className="flex items-center justify-center">
-          <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Processing...
-        </span>
-      ) : (
-        'Complete Purchase'
-      )}
-    </button>
-  );
-}

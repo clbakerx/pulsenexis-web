@@ -48,3 +48,4 @@ out
 dist
 .env
 *.local
+.env.local
