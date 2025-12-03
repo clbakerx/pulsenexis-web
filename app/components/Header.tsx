@@ -1,7 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  UserButton,
+} from '@clerk/nextjs';
 
 const pill = {
   padding: '10px 16px',
@@ -15,33 +20,66 @@ const pillPrimary = {
   ...pill,
   background: '#111',
   color: '#fff',
-  border: '1px solid #111',
 } as const;
 
 export default function Header() {
   return (
-    <header style={{ padding: '24px 0', borderBottom: '1px solid #e5e7eb' }}>
-      <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
-        {/* Brand */}
-        <Link href="/" style={{ fontWeight: 600, fontSize: 24, color: '#111', textDecoration: 'none' }}>
-          PulseNexis
+    <header
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '24px 24px 0',
+        maxWidth: '960px',
+        margin: '0 auto',
+      }}
+    >
+      {/* Logo / title */}
+      <Link
+        href="/"
+        style={{
+          fontSize: '20px',
+          fontWeight: 600,
+          textDecoration: 'none',
+          color: '#111',
+        }}
+      >
+        PulseNexis — v6
+      </Link>
+
+      {/* Right-side nav */}
+      <nav
+        style={{
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'center',
+        }}
+      >
+        {/* Always-visible plans link */}
+        <Link href="/plans" style={pill}>
+          Browse Plans
         </Link>
 
-        {/* Nav buttons centered */}
-        <nav style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 12 }}>
-          <SignedOut>
-            <SignInButton mode="modal">
-              <button style={pill}>Sign in</button>
-            </SignInButton>
-            <Link href="/sign-up" style={pillPrimary}>Join</Link>
-          </SignedOut>
+        <SignedIn>
+          {/* Explicit manage link that goes to the Clerk account/billing UI */}
+          <Link href="/plans" style={pill}>
+            Manage Account
+          </Link>
 
-          <SignedIn>
-            <Link href="/dashboard" style={pill}>Dashboard</Link>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
-        </nav>
-      </div>
+          {/* Avatar menu – its “Manage account” item also goes to /plans */}
+          <UserButton
+            afterSignOutUrl="/"
+            userProfileMode="navigation"
+            userProfileUrl="/plans"
+          />
+        </SignedIn>
+
+        <SignedOut>
+          <SignInButton mode="modal">
+            <button style={pillPrimary}>Sign in</button>
+          </SignInButton>
+        </SignedOut>
+      </nav>
     </header>
   );
 }
